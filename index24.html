@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador Rodoviario - Distribuicao por Eixo</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        #painel-controle {
+            position: absolute; top: 20px; left: 20px; width: 300px;
+            z-index: 100; display: flex; flex-direction: column; gap: 12px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.92); padding: 18px;
+            border-radius: 10px; border: 1px solid #d1d1d1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .titulo-card {
+            font-weight: bold; margin-bottom: 10px; display: block;
+            border-bottom: 1px solid #eee; padding-bottom: 5px; color: #333;
+        }
+
+        #telemetria {
+            background: rgba(10, 15, 20, 0.95);
+            color: #00ff41; border: 1px solid #00ff41;
+        }
+
+        .dado-linha { margin: 8px 0; font-size: 0.95em; }
+        .label { color: #888; text-transform: uppercase; font-size: 0.75em; }
+        .valor { float: right; font-family: 'Courier New', monospace; font-weight: bold; }
+
+        .status {
+            margin-top: 15px; padding: 10px; border-radius: 5px;
+            text-align: center; font-weight: bold; font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        .st-estavel { background: #1b5e20; color: #fff; }
+        .st-alerta { background: #e65100; color: #fff; }
+        .st-perigo { background: #b71c1c; color: #fff; animation: piscar 0.8s infinite; }
+
+        @keyframes piscar { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .tecla { background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="painel-controle">
+        <div class="card">
+            <span class="titulo-card">COMANDOS</span>
+            <div class="dado-linha"><span class="tecla">A</span> Adicionar Carga (1t)</div>
+            <div class="dado-linha"><span class="tecla">D</span> Remover Selecionada</div>
+            <hr style="border:0; border-top: 1px solid #eee; margin: 10px 0;">
+            <small style="color: #666;">Passe o mouse na carga azul: se ficar <span style="color: #d32f2f; font-weight: bold;">VERMELHA</span>, está pronta para remoção.</small>
+        </div>
+
+        <div id="telemetria" class="card">
+            <span class="titulo-card" style="color: #00ff41; border-color: #00ff41;">ESTABILIDADE DO TRUCK</span>
+            <div class="dado-linha"><span class="label">Peso Total:</span> <span id="txt-peso" class="valor">0.0 t</span></div>
+            <div class="dado-linha"><span class="label">Eixo Dianteiro:</span> <span id="txt-dianteiro" class="valor">0.0 t</span></div>
+            <div class="dado-linha"><span class="label">Eixo Traseiro:</span> <span id="txt-traseiro" class="valor">0.0 t</span></div>
+            <div class="dado-linha"><span class="label">Inclinação Lateral:</span> <span id="txt-list" class="valor">0.0°</span></div>
+            <div id="box-status" class="status st-estavel">SISTEMA OK</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xe0e0e0);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        camera.position.set(20, 15, 20);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const luzDir = new THREE.DirectionalLight(0xffffff, 0.8);
+        luzDir.position.set(10, 20, 10);
+        scene.add(luzDir);
+
+        const tamCarga = 0.8;
+        const matChassis = new THREE.MeshPhongMaterial({ color: 0x1a1a1a });
+
+        const posZ_Dianteiro = 7.5;
+        const posZ_Traseiro = -4.25; 
+        const entreEixos = posZ_Dianteiro - posZ_Traseiro;
+
+        const bauGeo = new THREE.BoxGeometry(4, 4, 12);
+        const bauWire = new THREE.LineSegments(
+            new THREE.EdgesGeometry(bauGeo),
+            new THREE.LineBasicMaterial({ color: 0x34495e, transparent: true, opacity: 0.4 })
+        );
+        bauWire.position.y = 3.2; 
+        scene.add(bauWire);
+
+        const piso = new THREE.Mesh(
+            new THREE.PlaneGeometry(4, 12),
+            new THREE.MeshBasicMaterial({ color: 0xbdc3c7, side: THREE.DoubleSide })
+        );
+        piso.rotation.x = -Math.PI / 2;
+        piso.position.y = 1.2;
+        scene.add(piso);
+
+        const cabine = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 3), matChassis);
+        cabine.position.set(0, 3.2, 7.5);
+        scene.add(cabine);
+
+        const rodaGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.5, 32);
+        function addEixo(z) {
+            const r1 = new THREE.Mesh(rodaGeo, matChassis);
+            r1.rotation.z = Math.PI/2; r1.position.set(-1.8, 0.6, z);
+            const r2 = r1.clone(); r2.position.x = 1.8;
+            scene.add(r1); scene.add(r2);
+        }
+        addEixo(-5); addEixo(-3.5); addEixo(7.5);
+
+        const cgEsfera = new THREE.Mesh(
+            new THREE.SphereGeometry(0.25, 24, 24),
+            new THREE.MeshBasicMaterial({ color: 0xffff00, depthTest: false })
+        );
+        cgEsfera.renderOrder = 999; 
+        scene.add(cgEsfera);
+
+        const cargas = [];
+        const mouse = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+        let alvoRemocao = null;
+
+        const guiaVerde = new THREE.Mesh(
+            new THREE.BoxGeometry(tamCarga, tamCarga, tamCarga),
+            new THREE.MeshBasicMaterial({ color: 0x2ecc71, transparent: true, opacity: 0.5 })
+        );
+        scene.add(guiaVerde);
+
+        function atualizarFisica() {
+            if (cargas.length === 0) {
+                cgEsfera.visible = false;
+                document.getElementById('txt-peso').innerText = "0.0 t";
+                document.getElementById('txt-dianteiro').innerText = "0.0 t";
+                document.getElementById('txt-traseiro').innerText = "0.0 t";
+                document.getElementById('box-status').className = "status st-estavel";
+                document.getElementById('box-status').innerText = "Vazio";
+                return;
+            }
+
+            cgEsfera.visible = true;
+            let somaX = 0, somaY = 0, somaZ = 0;
+            let pesoD = 0, pesoT = 0;
+
+            cargas.forEach(c => {
+                somaX += c.position.x;
+                somaY += c.position.y;
+                somaZ += c.position.z;
+
+                let dTras = c.position.z - posZ_Traseiro;
+                let ratioD = dTras / entreEixos;
+                pesoD += ratioD;
+                pesoT += (1 - ratioD);
+            });
+
+            const posX = somaX / cargas.length;
+            cgEsfera.position.set(posX, somaY / cargas.length, somaZ / cargas.length);
+            const list = posX * 12;
+            const elStatus = document.getElementById('box-status');
+
+            // NOVA LÓGICA DE COERÊNCIA E ADERÊNCIA
+            if (Math.abs(list) > 15.6 || pesoT > 8.0 || pesoD > 6.0 || pesoD < 0.1) {
+                cgEsfera.material.color.setHex(0xff0000);
+                elStatus.className = "status st-perigo";
+                if (pesoD < 0.1) elStatus.innerText = "FRENTE SEM ADERÊNCIA";
+                else if (pesoT > 8.0) elStatus.innerText = "SOBRECARGA TRASEIRA";
+                else elStatus.innerText = "RISCO EXTREMO";
+
+            } else if (Math.abs(list) > 8.4 || (pesoT > 1.5 && pesoD < 0.5)) {
+                cgEsfera.material.color.setHex(0xffa500);
+                elStatus.className = "status st-alerta";
+                elStatus.innerText = "DISTRIBUIÇÃO INCOERENTE";
+
+            } else {
+                cgEsfera.material.color.setHex(0xffff00);
+                elStatus.className = "status st-estavel";
+                elStatus.innerText = "SISTEMA OK";
+            }
+
+            document.getElementById('txt-peso').innerText = (cargas.length).toFixed(1) + " t";
+            document.getElementById('txt-dianteiro').innerText = Math.max(0, pesoD).toFixed(1) + " t";
+            document.getElementById('txt-traseiro').innerText = Math.max(0, pesoT).toFixed(1) + " t";
+            document.getElementById('txt-list').innerText = list.toFixed(1) + "°";
+        }
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            cargas.forEach(c => c.material.color.setHex(0x3498db));
+            alvoRemocao = null;
+
+            const hitsCarga = raycaster.intersectObjects(cargas);
+            if (hitsCarga.length > 0) {
+                alvoRemocao = hitsCarga[0].object;
+                alvoRemocao.material.color.setHex(0xe74c3c);
+                guiaVerde.visible = false;
+            } else {
+                const hitsPiso = raycaster.intersectObject(piso);
+                if (hitsPiso.length > 0) {
+                    guiaVerde.position.copy(hitsPiso[0].point);
+                    guiaVerde.position.y = piso.position.y + (tamCarga / 2);
+                    guiaVerde.visible = true;
+                } else {
+                    guiaVerde.visible = false;
+                }
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            const tecla = e.key.toLowerCase();
+            if (tecla === 'a' && guiaVerde.visible && !alvoRemocao) {
+                const box = new THREE.Mesh(new THREE.BoxGeometry(tamCarga, tamCarga, tamCarga), new THREE.MeshPhongMaterial({ color: 0x3498db }));
+                box.position.copy(guiaVerde.position);
+                scene.add(box); cargas.push(box);
+                atualizarFisica();
+            }
+            if (tecla === 'd' && alvoRemocao) {
+                scene.remove(alvoRemocao);
+                cargas.splice(cargas.indexOf(alvoRemocao), 1);
+                alvoRemocao = null;
+                atualizarFisica();
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+        atualizarFisica();
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+25-03
+
+index21.html
+
+1. 
+    Criacao da forma carreta (container, eixo e pneu)
+    Criacao da adicao de cargas (guia verde): mouse + A
+    Criacao da remocao de cargas (guia vermelho): mouse + D
+    Criacao do caminhão Truck
+
+
+2. 
+    Descricao nominal peso por eixo.
+    Descricao centro de gravidade por eixo.
+
+
+
+26-03
+index23.html
+
+3.
+    Simulador Rodoviario - Distribuicao por Eixo.
+    Inserido a fisica, centro de gravidade e quadro informativo.
