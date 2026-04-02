@@ -1,23 +1,29 @@
-25-03
+27-03
 
-index21.html
+index24.html
 
 1. 
-    Criacao da forma carreta (container, eixo e pneu)
-    Criacao da adicao de cargas (guia verde): mouse + A
-    Criacao da remocao de cargas (guia vermelho): mouse + D
-    Criacao do caminhão Truck
-
+	O simulador apresentado representa um caminhão rígido com três eixos (um dianteiro e dois traseiros agrupados), no qual cada unidade de carga adicionada equivale a aproximadamente 1 tonelada.
 
 2. 
-    Descricao nominal peso por eixo.
-    Descricao centro de gravidade por eixo.
-
-
-
-26-03
-index23.html
+	A adição de carga é feita posicionando o mouse sobre a carreta criando um guia de cor VERDE, quando isso ocorre pressione a tecla A. Assim, coloca-se as cargas. Já para remove-las, é necessario posicionar o mouse sobre a carga, tornando a guia de cor VERMELHO em seguida pressione a tecla D, isto removerá a carga selecionada.
 
 3.
-    Simulador Rodoviario - Distribuicao por Eixo.
-    Inserido a fisica, centro de gravidade e quadro informativo.
+    Os resultados do Simulador pela distribuição de carga física, centro de gravidade
+	Do ponto de vista de capacidade nominal, o sistema estabelece limites implícitos que funcionam como tolerâncias operacionais. Observa-se que o eixo dianteiro possui carregamento até aproximadamente 6 toneladas, enquanto o conjunto traseiro suporta até cerca de 8 toneladas.
+	A tolerância da capacidade total de carga não é explicitamente fixada como um único valor máximo. O sistema pode entrar em estado de alerta ou perigo caso haja má distribuição — evidenciando que, na prática, distribuição é tão crítica quanto o peso total.
+
+OBS.
+	Além disso, o código introduz um conceito importante de segurança: a perda de aderência no eixo dianteiro, devido concentração de carga sobre o eixo traseiro. Essa condição simula um cenário real de risco extremo, onde o veículo perde capacidade direcional, mesmo sem necessariamente exceder o peso total permitido.
+
+4.  
+	Quadro informativo. As tolerâncias são classificadas em três níveis:
+	Estável (Sistema OK): quando a distribuição entre os eixos está equilibrada e dentro dos limites seguros;
+	Alerta (Distribuição incoerente): quando há tendência de sobrecarga em um eixo ou alívio excessivo em outro, sem ainda atingir condição crítica;
+	Perigo (Risco extremo / Sobrecarga / Sem aderência): quando os limites de carga por eixo são ultrapassados ou quando a geometria da carga compromete severamente a estabilidade (inclinação lateral elevada ou descarregamento do eixo dianteiro).
+
+	Outro fator relevante é a inclinação lateral (list), que, embora não esteja diretamente ligada à capacidade nominal, atua como um indicador complementar de estabilidade. Valores elevados reforçam o diagnóstico de risco, mesmo que os pesos por eixo ainda estejam próximos dos limites.
+
+Conclusão:
+	Em síntese, o simulador adota uma abordagem coerente com a engenharia de transporte: não basta respeitar a capacidade total do veículo — é essencial manter a carga distribuída dentro das tolerâncias por eixo, garantindo estabilidade, aderência e segurança operacional.
+
