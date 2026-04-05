@@ -34,7 +34,9 @@ https://cleysonric10.github.io/carga_caminhao/
 
 ## 📸 Visual do sistema
 
-### Interface do simulador: ./imagem1.png
+### Interface do simulador: 
+
+![Simulador](imagem1.png)
 
 ---
 
