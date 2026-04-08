@@ -28,7 +28,7 @@ Este projeto simula o **comportamento da carga em um caminhão**, permitindo:
 ## 🖥️ Demonstração
 
 👉 Acesse o simulador:  
-https://cleysonric10.github.io/carga_caminhao/
+https://cleysonric10.github.io/estabilidade-carga-rodoviaria/
 
 ---
 
